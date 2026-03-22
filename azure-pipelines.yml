@@ -1,36 +1,65 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  name: 'PersonalAgentMachine'
+  demands:
+  - Agent.Name -equals MyPortfolio
+  
+variables:
+  imageRepository: 'portfolio-java'
+  containerRegistry: 'myacr12345.azurecr.io'
+  dockerfilePath: 'Dockerfile'
+  imageTag: '$(Build.BuildId)'
+  aksResourceGroup: 'my-rg'
+  aksClusterName: 'myaks-cluster'
+  kubernetesNamespace: 'portfolio-dev'
 
-steps:
-- task: SonarQubePrepare@8
-  inputs:
-    SonarQube: 'SonarQube-Server'
-    scannerMode: 'other'
-- task: Maven@4
-  inputs:
-    azureSubscription: 'Azure subscription 1(1)(0894542e-f1c7-495e-a954-85424a27e7ef)'
-    mavenPomFile: 'pom.xml'
-    publishJUnitResults: true
-    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    codeCoverageToolOption: 'Cobertura'
-    javaHomeOption: 'JDKVersion'
-    mavenVersionOption: 'Default'
-    mavenAuthenticateFeed: false
-    effectivePomSkip: false
-    sonarQubeRunAnalysis: true
-    sqMavenPluginVersionChoice: 'latest'
-- task: SonarQubePublish@8
-  inputs:
-    pollingTimeoutSec: '300'
+stages:
+- stage: Build_Test_Analyze
+  displayName: Build Test Analyze
+  jobs:
+  - job: MavenAndSonar
+    displayName: Maven Build and SonarQube
+    steps:
+    - checkout: self
 
-- task: SonarQubeAnalyze@8
-  inputs:
-    jdkversion: 'JAVA_HOME_17_X64'
+    - task: JavaToolInstaller@0
+      displayName: Install Java 17
+      inputs:
+        versionSpec: '17'
+        jdkArchitectureOption: 'x64'
+        jdkSourceOption: 'PreInstalled'
+    - task: SonarQubePrepare@8
+      inputs:
+        SonarQube: 'SonarQube-Server'
+        scannerMode: 'other'
+    - task: Maven@4
+      inputs:
+        azureSubscription: 'Azure subscription 1(1)(0894542e-f1c7-495e-a954-85424a27e7ef)'
+        mavenPomFile: 'pom.xml'
+        publishJUnitResults: true
+        testResultsFiles: '**/surefire-reports/TEST-*.xml'
+        codeCoverageToolOption: 'Cobertura'
+        javaHomeOption: 'JDKVersion'
+        mavenVersionOption: 'Default'
+        mavenAuthenticateFeed: false
+        effectivePomSkip: false
+        sonarQubeRunAnalysis: true
+        sqMavenPluginVersionChoice: 'latest'
+    - task: SonarQubePublish@8
+      inputs:
+        pollingTimeoutSec: '300'
+
+    - task: SonarQubeAnalyze@8
+      inputs:
+        jdkversion: 'JAVA_HOME_17_X64'
+# - stage: Docker_Build_Push
+#   displayName: Docker Build Push
+#   dependsOn: Build_Test_Analyze
+#   condition: succeeded()
+#   jobs:
+#   - job: DockerBuildPush
+#     displayName: Build and Push Image
+#     steps:
+#     - checkout: self
