@@ -3,8 +3,6 @@ trigger:
 
 pool:
   name: 'PersonalAgentMachine'
-  demands:
-  - Agent.Name -equals MyPortfolio
 
 stages:
 - stage: Build_Test_Analyze
