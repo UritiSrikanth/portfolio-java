@@ -12,14 +12,6 @@ stages:
     displayName: Maven Build and SonarQube
     steps:
     - checkout: self
-
-    - task: JavaToolInstaller@0
-      displayName: Install Java 17
-      inputs:
-        versionSpec: '17'
-        jdkArchitectureOption: 'x64'
-        jdkSourceOption: 'PreInstalled'
-
     - task: SonarQubePrepare@8
       displayName: Prepare SonarQube
       inputs:
