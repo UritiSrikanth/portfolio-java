@@ -5,15 +5,6 @@ pool:
   name: 'PersonalAgentMachine'
   demands:
   - Agent.Name -equals MyPortfolio
-  
-variables:
-  imageRepository: 'portfolio-java'
-  containerRegistry: 'myacr12345.azurecr.io'
-  dockerfilePath: 'Dockerfile'
-  imageTag: '$(Build.BuildId)'
-  aksResourceGroup: 'my-rg'
-  aksClusterName: 'myaks-cluster'
-  kubernetesNamespace: 'portfolio-dev'
 
 stages:
 - stage: Build_Test_Analyze
@@ -30,36 +21,32 @@ stages:
         versionSpec: '17'
         jdkArchitectureOption: 'x64'
         jdkSourceOption: 'PreInstalled'
+
     - task: SonarQubePrepare@8
+      displayName: Prepare SonarQube
       inputs:
         SonarQube: 'SonarQube-Server'
         scannerMode: 'other'
+
     - task: Maven@4
+      displayName: Maven Build
       inputs:
-        azureSubscription: 'Azure subscription 1(1)(0894542e-f1c7-495e-a954-85424a27e7ef)'
         mavenPomFile: 'pom.xml'
+        goals: 'clean package'
         publishJUnitResults: true
         testResultsFiles: '**/surefire-reports/TEST-*.xml'
-        codeCoverageToolOption: 'Cobertura'
         javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.17'
         mavenVersionOption: 'Default'
-        mavenAuthenticateFeed: false
-        effectivePomSkip: false
         sonarQubeRunAnalysis: true
         sqMavenPluginVersionChoice: 'latest'
-    - task: SonarQubePublish@8
-      inputs:
-        pollingTimeoutSec: '300'
 
     - task: SonarQubeAnalyze@8
+      displayName: Run SonarQube Analysis
       inputs:
         jdkversion: 'JAVA_HOME_17_X64'
-# - stage: Docker_Build_Push
-#   displayName: Docker Build Push
-#   dependsOn: Build_Test_Analyze
-#   condition: succeeded()
-#   jobs:
-#   - job: DockerBuildPush
-#     displayName: Build and Push Image
-#     steps:
-#     - checkout: self
+
+    - task: SonarQubePublish@8
+      displayName: Publish Quality Gate
+      inputs:
+        pollingTimeoutSec: '300'
